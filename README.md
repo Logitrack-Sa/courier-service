@@ -11,3 +11,9 @@ Base actual: README, plantilla de PR, formulario de issues y revisor IA en GitHu
 La IA devuelve hallazgos sobre PR y sugerencias de pruebas; no planifica, no aprueba ni integra. CI de esta base verifica automatización. Las pruebas Maven y Docker se agregan en sus issues cuando exista la aplicación.
 
 No incorporar credenciales, claves JWT privadas ni archivos .env. Java25 para aplicaciones; config-repo es únicamente Git de propiedades no sensibles dev/prod.
+
+## Punto de partida de la extracción
+
+Reutilizar el CRUD de repartidores existente en shipment-service: entidad Courier, repositorio, mapper, DTOs, servicio, controller y manejo de errores. Conservar los UUID al migrar los datos; los envíos los guardarán como referencias escalares.
+
+Los endpoints de disponibilidad y estado interno mínimo están definidos en el contrato central. La base MySQL pertenece exclusivamente a este servicio. Probar HTTP y JWT con fixtures antes de integrar las aplicaciones reales; la seguridad y el CRUD tienen responsables separados en las issues.
