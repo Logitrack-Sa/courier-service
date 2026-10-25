@@ -2,6 +2,7 @@ package com.logitrack.courierservice;
 
 import com.logitrack.courierservice.entity.CourierStatus;
 import com.logitrack.courierservice.repository.CourierRepository;
+import com.logitrack.courierservice.support.JwtTestSupport;
 import jakarta.persistence.EntityManager;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -20,10 +21,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 @Transactional
-class CourierPersistenceTest {
+class CourierPersistenceTest extends JwtTestSupport {
     @Autowired MockMvc http;
     @Autowired CourierRepository couriers;
     @Autowired JdbcTemplate jdbc;
