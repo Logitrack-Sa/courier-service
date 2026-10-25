@@ -28,6 +28,14 @@ public class CourierServiceImp implements CourierService{
     private final CourierMapper courierMapper;
 
     @Transactional
+    public CourierResponse update(UUID id, CourierRequest request) {
+        Courier courier = findEntity(id);
+        courier.updateInfo(request.name(), request.vehicleType());
+        log.info("Repartidor actualizado id={}", id);
+        return courierMapper.toResponse(courier);
+    }
+
+    @Transactional
     public CourierResponse create(CourierRequest request) {
         Courier saved = courierRepository.save(courierMapper.toEntity(request));
         log.info("Repartidor registrado id={}", saved.getId());

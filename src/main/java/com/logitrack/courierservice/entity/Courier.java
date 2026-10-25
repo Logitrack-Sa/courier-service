@@ -34,6 +34,10 @@ public class Courier extends BaseEntity {
     public void changeStatus(CourierStatus newStatus) {
         this.status = Objects.requireNonNull(newStatus, "El estado no puede ser nulo");
     }
+    public void updateInfo(String name, String vehicleType) {
+        this.name = Objects.requireNonNull(name, "El nombre no puede ser nulo");
+        this.vehicleType = Objects.requireNonNull(vehicleType, "El tipo de vehículo no puede ser nulo");
+    }
 
     public boolean isAvailable() {
         return status == CourierStatus.ACTIVO;
