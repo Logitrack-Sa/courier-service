@@ -1,5 +1,6 @@
 package com.logitrack.courierservice.controller;
 
+import com.logitrack.courierservice.dto.CourierAvailabilityResponse;
 import com.logitrack.courierservice.dto.CourierRequest;
 import com.logitrack.courierservice.dto.CourierResponse;
 import com.logitrack.courierservice.dto.CourierStatusRequest;
@@ -82,5 +83,15 @@ public class CourierController {
             @Valid @RequestBody CourierRequest request) {
         log.info("PUT /api/v1/couriers/{}", id);
         return courierService.update(id, request);
+    }
+
+    @GetMapping("/{id}/availability")
+    @Operation(
+            summary = "Consultar disponibilidad de un repartidor",
+            description = "Devuelve el courierId, status y un booleano 'available' (ACTIVO -> true, INACTIVO -> false). Retorna 404 si el repartidor no existe."
+    )
+    public CourierAvailabilityResponse getAvailability(@PathVariable UUID id) {
+        log.debug("GET /api/v1/couriers/{}/availability", id);
+        return courierService.getAvailability(id);
     }
 }

@@ -1,12 +1,14 @@
 package com.logitrack.courierservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.logitrack.courierservice.dto.CourierAvailabilityResponse;
 import com.logitrack.courierservice.dto.CourierRequest;
 import com.logitrack.courierservice.dto.CourierResponse;
 import com.logitrack.courierservice.dto.CourierStatusRequest;
 import com.logitrack.courierservice.entity.CourierStatus;
 import com.logitrack.courierservice.exception.ResourceNotFoundException;
 import com.logitrack.courierservice.service.CourierService;
+import com.logitrack.courierservice.service.implementation.CourierServiceImp;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -40,7 +42,7 @@ class CourierControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private CourierService courierService;
+    private CourierServiceImp courierService;
 
     @Test
     void createCourierReturnsCreated() throws Exception {
@@ -95,5 +97,20 @@ class CourierControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("INACTIVO"));
+    }
+    @Test
+    void getAvailabilityReturnsOkWhenCourierExists() throws Exception {
+        UUID courierId = UUID.randomUUID();
+        CourierAvailabilityResponse response = new CourierAvailabilityResponse(
+                courierId, CourierStatus.ACTIVO, true
+        );
+
+        when(courierService.getAvailability(courierId)).thenReturn(response);
+
+        mockMvc.perform(get("/api/v1/couriers/{id}/availability", courierId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.courierId").value(courierId.toString()))
+                .andExpect(jsonPath("$.status").value("ACTIVO"))
+                .andExpect(jsonPath("$.available").value(true));
     }
 }

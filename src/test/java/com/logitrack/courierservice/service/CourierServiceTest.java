@@ -101,4 +101,45 @@ class CourierServiceTest {
         assertThatThrownBy(() -> courierService.changeStatus(id, CourierStatus.INACTIVO))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
+
+    @Test
+    void getAvailabilityReturnsTrueWhenCourierIsActive() {
+        UUID id = UUID.randomUUID();
+        Courier courier = new Courier("Luis", "MOTO"); // ACTIVO por defecto
+        when(courierRepository.findById(id)).thenReturn(Optional.of(courier));
+
+        var response = courierService.getAvailability(id);
+
+        assertThat(response.status()).isEqualTo(CourierStatus.ACTIVO);
+        assertThat(response.available()).isTrue();
+    }
+
+    @Test
+    void getAvailabilityThrowsWhenCourierDoesNotExist() {
+        UUID id = UUID.randomUUID();
+        when(courierRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> courierService.getAvailability(id))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void getInternalStatusReturnsStatusWhenCourierExists() {
+        UUID id = UUID.randomUUID();
+        Courier courier = new Courier("Luis", "MOTO");
+        when(courierRepository.findById(id)).thenReturn(Optional.of(courier));
+
+        var response = courierService.getInternalStatus(id);
+
+        assertThat(response.status()).isEqualTo(CourierStatus.ACTIVO);
+    }
+
+    @Test
+    void getInternalStatusThrowsWhenCourierDoesNotExist() {
+        UUID id = UUID.randomUUID();
+        when(courierRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> courierService.getInternalStatus(id))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
 }
