@@ -30,6 +30,18 @@
         <java.version>25</java.version>
     </properties>
     <dependencies>
+
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
         <!-- Spring Boot Test (Soluciona los errores en CourierRepositoryTest) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

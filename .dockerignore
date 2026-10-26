@@ -1,0 +1,14 @@
+# Ignorar dependencias locales y compilaciones previas
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!target/*.jar
+
+# Ignorar configuraciones de IDEs
+.idea/
+*.iml
+.vscode/
+
+# Ignorar archivos de Git y variables locales
+.git/
+.gitignore
+.env
