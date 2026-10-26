@@ -17,9 +17,3 @@ No incorporar credenciales, claves JWT privadas ni archivos .env. Java25 para ap
 Reutilizar el CRUD de repartidores existente en shipment-service: entidad Courier, repositorio, mapper, DTOs, servicio, controller y manejo de errores. Conservar los UUID al migrar los datos; los envíos los guardarán como referencias escalares.
 
 Los endpoints de disponibilidad y estado interno mínimo están definidos en el contrato central. La base MySQL pertenece exclusivamente a este servicio. Probar HTTP y JWT con fixtures antes de integrar las aplicaciones reales; la seguridad y el CRUD tienen responsables separados en las issues.
-
-## CI independiente (#60)
-
-Calidad del repositorio valida Markdown y estructura. Mientras no exista POM no ejecuta ni declara tests Java. En los repositorios de aplicación, al agregar POM se habilita Maven verify con MySQL efímero; al agregar Dockerfile se habilita la construcción, sin publicar imágenes. Mantener fixtures HTTP/JWT/Git propios: ningún job descarga main de otro servicio. Las pruebas de aplicación deben usar perfil test y dobles locales. El PR se ejecuta sin secretos, con token de solo lectura; la revisión IA conserva su workflow separado.
-
-La integración global se ejecuta manualmente desde shipment-service cuando estén publicadas las cuatro imágenes, según su issue #61. No bloquea los checks de este repositorio. config-repo contiene propiedades Git y no compila una aplicación.
