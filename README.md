@@ -51,3 +51,13 @@ Microservicio independiente responsable de la administración de repartidores y 
 El proyecto cuenta con pruebas unitarias (Mockito) y de integración HTTP (MockMvc) aisladas mediante dobles y fixtures, permitiendo validar contratos sin depender de otros servicios:
 ```bash
 mvn clean test
+```
+
+## Migración de Repartidores (Sprint 1 a Sprint 2)
+
+Para cumplir con el desacoplamiento arquitectónico, `courier-service` opera con su propia base de datos MySQL exclusiva. 
+
+**Reglas de Exportación e Integridad de Datos:**
+1. **Conservación de UUIDs:** Al extraer y migrar los registros de repartidores desde el diseño del Sprint 1, se deben insertar conservando exactamente sus UUID originales. 
+2. **Referencias Escalares:** Los envíos en `shipment-service` guardarán estos identificadores como referencias escalares, eliminando el acoplamiento de tablas.
+3. **Aislamiento de Bases de Datos:** Queda estrictamente prohibido compartir bases de datos o realizar accesos directos a las bases de otros servicios. Cualquier validación de repartidores se realiza a través de los contratos REST expuestos.
