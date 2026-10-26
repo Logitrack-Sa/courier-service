@@ -61,3 +61,59 @@ Para cumplir con el desacoplamiento arquitectónico, `courier-service` opera con
 1. **Conservación de UUIDs:** Al extraer y migrar los registros de repartidores desde el diseño del Sprint 1, se deben insertar conservando exactamente sus UUID originales. 
 2. **Referencias Escalares:** Los envíos en `shipment-service` guardarán estos identificadores como referencias escalares, eliminando el acoplamiento de tablas.
 3. **Aislamiento de Bases de Datos:** Queda estrictamente prohibido compartir bases de datos o realizar accesos directos a las bases de otros servicios. Cualquier validación de repartidores se realiza a través de los contratos REST expuestos.
+
+## Ejecución con Docker
+
+### Requisitos previos
+
+- Docker Desktop instalado y en ejecución.
+- Acceso a una instancia MySQL compatible con la configuración del servicio.
+
+### Construir la imagen
+
+Desde la raíz del proyecto, ejecutar:
+
+```bash
+docker build -t logitrack/courier-service:sprint2 .
+```
+
+La imagen se construye mediante un proceso multietapa con Java 25, separando la compilación de la ejecución. El contenedor se ejecuta con un usuario sin privilegios.
+
+### Configuración
+
+El servicio utiliza variables de entorno para conectarse a MySQL y, opcionalmente, al servidor de configuración:
+
+| Variable | Descripción | Valor predeterminado |
+|---|---|---|
+| `DB_HOST` | Host de MySQL | `localhost` |
+| `DB_PORT` | Puerto de MySQL | `3306` |
+| `DB_NAME` | Nombre de la base de datos | `courier_db` |
+| `DB_USER` | Usuario de MySQL | `logitrack` |
+| `DB_PASSWORD` | Contraseña de MySQL | Sin valor predeterminado |
+| `CONFIG_SERVER_URL` | URL del servidor de configuración | `http://localhost:8888` |
+
+No incluir contraseñas ni otros secretos en la imagen Docker o en el repositorio.
+
+### Ejecutar el contenedor
+
+Si MySQL está disponible en una red Docker y el contenedor de base de datos se llama `courier-mysql`, se puede ejecutar:
+
+```bash
+docker run -d \
+  --name courier-service \
+  --network courier-network \
+  -p 8082:8082 \
+  -e DB_HOST=courier-mysql \
+  -e DB_PORT=3306 \
+  -e DB_NAME=courier_db \
+  -e DB_USER=logitrack \
+  -e DB_PASSWORD="<tu_contraseña>" \
+  -e CONFIG_SERVER_URL=http://configserver:8888 \
+  logitrack/courier-service:sprint2
+```
+
+La red `courier-network` y la base de datos deben existir previamente, y los nombres deben coincidir con la configuración del entorno.
+
+### Verificar el estado
+
+Consultar el
