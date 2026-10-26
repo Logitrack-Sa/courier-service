@@ -1,6 +1,8 @@
 name: Verificar base Spring Boot
 on:
   pull_request:
+  push:
+    branches: [develop]
   workflow_dispatch:
 permissions:
   contents: read
