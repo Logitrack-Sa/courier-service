@@ -58,6 +58,31 @@ class CourierPersistenceTest extends JwtTestSupport {
                 .andExpect(status().isBadRequest());
         assertThat(couriers.count()).isZero();
     }
+    @Test void updatesPersistAndInactiveCourierIsUnavailable() throws Exception {
+        var courier = couriers.saveAndFlush(new com.logitrack.courierservice.entity.Courier("Antes", "BICI"));
+        var id = courier.getId();
+        http.perform(put("/api/v1/couriers/"+id).contentType("application/json")
+                .content("{\"name\":\"Después\",\"vehicleType\":\"MOTO\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.id").value(id.toString()));
+        http.perform(patch("/api/v1/couriers/"+id+"/status").contentType("application/json")
+                .content("{\"status\":\"INACTIVO\"}")).andExpect(status().isOk());
+        entities.flush(); entities.clear();
+        assertThat(couriers.findById(id).orElseThrow().getName()).isEqualTo("Después");
+        http.perform(get("/api/v1/couriers/"+id+"/availability"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.available").value(false));
+        http.perform(get("/api/v1/couriers/"+UUID.randomUUID()+"/availability"))
+                .andExpect(status().isNotFound());
+    }
+    @Test void updateRejectsInvalidAndPrivilegedFieldsWithoutWriting() throws Exception {
+        var courier = couriers.saveAndFlush(new com.logitrack.courierservice.entity.Courier("Original", "BICI"));
+        for (String body : new String[]{"{\"name\":\" \",\"vehicleType\":\"MOTO\"}",
+                "{\"name\":\"Otro\",\"vehicleType\":\"MOTO\",\"id\":\""+UUID.randomUUID()+"\"}"}) {
+            http.perform(put("/api/v1/couriers/"+courier.getId()).contentType("application/json").content(body))
+                    .andExpect(status().isBadRequest());
+        }
+        entities.flush(); entities.clear();
+        assertThat(couriers.findById(courier.getId()).orElseThrow().getName()).isEqualTo("Original");
+    }
     @Test void missingAndMalformedIdHaveControlledErrors() throws Exception {
         http.perform(get("/api/v1/couriers/"+UUID.randomUUID())).andExpect(status().isNotFound());
         http.perform(get("/api/v1/couriers/not-a-uuid")).andExpect(status().isBadRequest());

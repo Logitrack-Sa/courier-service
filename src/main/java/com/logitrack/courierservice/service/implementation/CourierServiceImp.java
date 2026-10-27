@@ -27,6 +27,26 @@ public class CourierServiceImp implements CourierService{
     private final CourierRepository courierRepository;
     private final CourierMapper courierMapper;
 
+    @Transactional(readOnly = true)
+    public com.logitrack.courierservice.dto.CourierAvailabilityResponse getAvailability(UUID id) {
+        log.debug("Consultando disponibilidad para repartidor id={}", id);
+        Courier courier = findEntity(id);
+        boolean available = courier.isAvailable();
+        return new com.logitrack.courierservice.dto.CourierAvailabilityResponse(
+                courier.getId(),
+                courier.getStatus(),
+                available
+        );
+    }
+
+    @Transactional
+    public CourierResponse update(UUID id, CourierRequest request) {
+        Courier courier = findEntity(id);
+        courier.updateInfo(request.name(), request.vehicleType());
+        log.info("Repartidor actualizado id={}", id);
+        return courierMapper.toResponse(courier);
+    }
+
     @Transactional
     public CourierResponse create(CourierRequest request) {
         Courier saved = courierRepository.save(courierMapper.toEntity(request));
