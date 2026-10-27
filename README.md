@@ -29,6 +29,6 @@ El servicio funciona como Resource Server: valida localmente firma RS256, `exp`,
 
 Variables requeridas: `JWT_PUBLIC_KEY_LOCATION` (PEM público), `JWT_KEY_ID`, `JWT_ISSUER` y `JWT_AUDIENCE`. Las claves de prueba son efímeras. Ver [detalle de S2-15](docs/S2-15-SEGURIDAD.md).
 
-Disponibilidad, estado interno y seguridad se integran en esta rama. Config Client y Docker pertenecen a otras issues. El servicio escucha solo en 127.0.0.1 por defecto; `SERVER_ADDRESS` permite preparar el despliegue posterior. No agregar entidades ni dependencias de shipment.
+Disponibilidad, estado interno, seguridad, Config Client y Docker están integrados. Los perfiles dev/prod reciben de Config Server el issuer, audience y kid mediante variables obligatorias, sin valores implícitos. El servicio escucha solo en 127.0.0.1 por defecto; la imagen configura `SERVER_ADDRESS=0.0.0.0` para su red Docker. No agregar entidades ni dependencias de shipment.
 
 [Contrato del equipo](https://github.com/Logitrack-Sa/shipment-service/blob/main/docs/sprint2/CONTRATOS.md) · [Tablero](https://github.com/orgs/Logitrack-Sa/projects/2). La revisión IA no sustituye tests ni revisión humana.
