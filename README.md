@@ -1,5 +1,11 @@
 # courier-service
 
+## Entrega integrada del Sprint 2
+
+Incluye las funciones de Pablo (actualización, estado y disponibilidad), conserva JWT/UUID/Flyway de develop y usa Config Client compatible con Boot 3.5.16. Dev/prod requieren CONFIG_SERVER_URL; test se mantiene aislado. DB_URL, DB_USERNAME, DB_PASSWORD y JWT_PUBLIC_KEY_LOCATION se suministran al arrancar. La imagen atiende en 0.0.0.0:8082 con UID 10001.
+
+La suite comprueba persistencia real, UUID conservado, actualización, courier inactivo, roles y bootstrap remoto dev/prod. La orquestación y publicación de las cuatro imágenes están en shipment-service, issues #64/#65.
+
 Extracción del CRUD de repartidores del Sprint 1 sobre la rama de Damián, issue #2. Java 25 y Spring Boot 3.5.16, Maven Wrapper, JPA y Flyway. Base exclusiva: courier_db. Conserva entidades, DTOs, mapper, servicio, controller y errores del trabajo previo.
 
 ## Arrancar y probar

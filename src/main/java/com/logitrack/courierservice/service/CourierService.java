@@ -10,6 +10,8 @@ import org.springframework.data.domain.Pageable;
 public interface CourierService {
 
 
+    CourierResponse update(UUID id, CourierRequest request);
+    com.logitrack.courierservice.dto.CourierAvailabilityResponse getAvailability(UUID id);
     CourierResponse create(CourierRequest request);
     CourierResponse findById(UUID id);
     Page<CourierResponse> findAll(CourierStatus status, Pageable pageable);
