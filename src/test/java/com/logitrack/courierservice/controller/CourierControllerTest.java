@@ -6,16 +6,14 @@ import com.logitrack.courierservice.dto.CourierRequest;
 import com.logitrack.courierservice.dto.CourierResponse;
 import com.logitrack.courierservice.dto.CourierStatusRequest;
 import com.logitrack.courierservice.entity.CourierStatus;
+import com.logitrack.courierservice.exception.BusinessRuleException;
 import com.logitrack.courierservice.exception.ResourceNotFoundException;
-import com.logitrack.courierservice.service.CourierService;
 import com.logitrack.courierservice.service.implementation.CourierServiceImp;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -29,10 +27,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 
-
 @org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc(addFilters = false)
 @org.springframework.test.context.ActiveProfiles("test")
 @WebMvcTest(CourierController.class)
+@Import(ObjectMapper.class)
 class CourierControllerTest {
 
     @Autowired
@@ -42,7 +40,7 @@ class CourierControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private CourierService courierService;
+    private CourierServiceImp courierService;
 
     @Test
     void createCourierReturnsCreated() throws Exception {
@@ -59,6 +57,31 @@ class CourierControllerTest {
                 .andExpect(jsonPath("$.id").value(courierId.toString()))
                 .andExpect(jsonPath("$.name").value("Luis Pérez"))
                 .andExpect(jsonPath("$.status").value("ACTIVO"));
+    }
+
+    @Test
+    void createCourierReturnsBadRequestWhenDniInvalid() throws Exception {
+        CourierRequest request = new CourierRequest("Luis Pérez", "ABC123", "MOTO");
+
+        mockMvc.perform(post("/api/v1/couriers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
+    void createCourierReturnsUnprocessableEntityWhenDniDuplicated() throws Exception {
+        CourierRequest request = new CourierRequest("Luis Pérez", "38456789", "MOTO");
+
+        when(courierService.create(any(CourierRequest.class)))
+                .thenThrow(new BusinessRuleException("DUPLICATE_DNI", "Ya existe un repartidor registrado con el DNI 38456789"));
+
+        mockMvc.perform(post("/api/v1/couriers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("DUPLICATE_DNI"));
     }
 
     @Test
@@ -98,6 +121,7 @@ class CourierControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("INACTIVO"));
     }
+
     @Test
     void getAvailabilityReturnsOkWhenCourierExists() throws Exception {
         UUID courierId = UUID.randomUUID();
