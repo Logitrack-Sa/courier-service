@@ -19,6 +19,9 @@ public class Courier extends BaseEntity {
     @Column(nullable = false, length = 120)
     private String name;
 
+    @Column(nullable = false, unique = true, length = 20)
+    private String dni;
+
     @Column(name = "vehicle_type", nullable = false, length = 50)
     private String vehicleType;
 
@@ -26,16 +29,19 @@ public class Courier extends BaseEntity {
     @Column(nullable = false, length = 20)
     private CourierStatus status = CourierStatus.ACTIVO;
 
-    public Courier(String name, String vehicleType) {
+    public Courier(String name, String dni, String vehicleType) {
         this.name = name;
+        this.dni = dni;
         this.vehicleType = vehicleType;
     }
 
     public void changeStatus(CourierStatus newStatus) {
         this.status = Objects.requireNonNull(newStatus, "El estado no puede ser nulo");
     }
-    public void updateInfo(String name, String vehicleType) {
+
+    public void updateInfo(String name, String dni, String vehicleType) {
         this.name = Objects.requireNonNull(name, "El nombre no puede ser nulo");
+        this.dni = Objects.requireNonNull(dni, "El DNI no puede ser nulo");
         this.vehicleType = Objects.requireNonNull(vehicleType, "El tipo de vehículo no puede ser nulo");
     }
 

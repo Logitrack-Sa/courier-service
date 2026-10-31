@@ -1,15 +1,15 @@
 package com.logitrack.courierservice.service.implementation;
 
-import com.logitrack.courierservice.service.CourierService;
 import com.logitrack.courierservice.dto.CourierRequest;
 import com.logitrack.courierservice.dto.CourierResponse;
 import com.logitrack.courierservice.entity.Courier;
 import com.logitrack.courierservice.entity.CourierStatus;
+import com.logitrack.courierservice.exception.BusinessRuleException;
 import com.logitrack.courierservice.exception.ResourceNotFoundException;
 import com.logitrack.courierservice.mapper.CourierMapper;
 import com.logitrack.courierservice.repository.CourierRepository;
+import com.logitrack.courierservice.service.CourierService;
 import java.util.UUID;
-
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor
 @Service
-public class CourierServiceImp implements CourierService{
+public class CourierServiceImp implements CourierService {
 
     private static final Logger log = LoggerFactory.getLogger(CourierService.class);
 
@@ -52,13 +52,21 @@ public class CourierServiceImp implements CourierService{
     @Transactional
     public CourierResponse update(UUID id, CourierRequest request) {
         Courier courier = findEntity(id);
-        courier.updateInfo(request.name(), request.vehicleType());
+        if (courierRepository.existsByDniAndIdNot(request.dni(), id)) {
+            throw new BusinessRuleException("DUPLICATE_DNI",
+                    "Ya existe otro repartidor registrado con el DNI " + request.dni());
+        }
+        courier.updateInfo(request.name(), request.dni(), request.vehicleType());
         log.info("Repartidor actualizado id={}", id);
         return courierMapper.toResponse(courier);
     }
 
     @Transactional
     public CourierResponse create(CourierRequest request) {
+        if (courierRepository.existsByDni(request.dni())) {
+            throw new BusinessRuleException("DUPLICATE_DNI",
+                    "Ya existe un repartidor registrado con el DNI " + request.dni());
+        }
         Courier saved = courierRepository.save(courierMapper.toEntity(request));
         log.info("Repartidor registrado id={}", saved.getId());
         return courierMapper.toResponse(saved);
@@ -104,6 +112,7 @@ public class CourierServiceImp implements CourierService{
         return courierRepository.findById(id)
                 .orElseThrow(() -> {
                     log.warn("Repartidor no encontrado id={}", id);
-                    return new ResourceNotFoundException("Repartidor", id);            });
+                    return new ResourceNotFoundException("Repartidor", id);
+                });
     }
 }
