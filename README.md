@@ -2,9 +2,9 @@
 
 ## Entrega integrada del Sprint 2
 
-Incluye las funciones de Pablo (actualización, estado y disponibilidad), conserva JWT/UUID/Flyway de develop y usa Config Client compatible con Boot 3.5.16. Dev/prod requieren CONFIG_SERVER_URL; test se mantiene aislado. DB_URL, DB_USERNAME, DB_PASSWORD y JWT_PUBLIC_KEY_LOCATION se suministran al arrancar. La imagen atiende en 0.0.0.0:8082 con UID 10001.
+Incluye las funciones de Pablo (actualización, estado, disponibilidad y validación de DNI único), conserva JWT/UUID/Flyway de develop y usa Config Client compatible con Boot 3.5.16. Dev/prod requieren CONFIG_SERVER_URL; test se mantiene aislado. DB_URL, DB_USERNAME, DB_PASSWORD y JWT_PUBLIC_KEY_LOCATION se suministran al arrancar. La imagen atiende en 0.0.0.0:8082 con UID 10001.
 
-La suite comprueba persistencia real, UUID conservado, actualización, courier inactivo, roles y bootstrap remoto dev/prod. La orquestación y publicación de las cuatro imágenes están en shipment-service, issues #64/#65.
+La suite comprueba persistencia real, UUID conservado, actualización, unicidad de DNI, courier inactivo, roles y bootstrap remoto dev/prod. La orquestación y publicación de las cuatro imágenes están en shipment-service, issues #64/#65.
 
 Extracción del CRUD de repartidores del Sprint 1 sobre la rama de Damián, issue #2. Java 25 y Spring Boot 3.5.16, Maven Wrapper, JPA y Flyway. Base exclusiva: courier_db. Conserva entidades, DTOs, mapper, servicio, controller y errores del trabajo previo.
 
@@ -14,14 +14,16 @@ Definir DB_URL, DB_USERNAME y DB_PASSWORD de una base MySQL propia. `./mvnw spri
 
 `./mvnw clean verify` usa H2 aislado. CI repite con MySQL 8.4, Flyway, persistencia y API reales. Para tests MySQL propios: TEST_DB_URL, TEST_DB_USERNAME y TEST_DB_PASSWORD, siempre sobre una base descartable.
 
-## Contrato conservado
+## Contrato conservado y ampliado
 
-- POST /api/v1/couriers: name y vehicleType; 201 y Location. Estado inicial ACTIVO, UUID generado.
+- POST /api/v1/couriers: `name`, `dni` (7 a 8 dígitos numéricos, único) y `vehicleType`; 201 y Location. Estado inicial ACTIVO, UUID generado.
+- PUT /api/v1/couriers/{id}: actualiza `name`, `dni` y `vehicleType` validando unicidad del DNI.
 - GET /api/v1/couriers: página con content/page, filtro status opcional.
-- GET /api/v1/couriers/{id}: DTO id, name, vehicleType, status, createdAt.
+- GET /api/v1/couriers/{id}: DTO `id`, `name`, `dni`, `vehicleType`, `status`, `createdAt`.
+- GET /api/v1/couriers/{id}/availability: devuelve `courierId`, `status` y `available`.
 - PATCH /api/v1/couriers/{id}/status: ACTIVO o INACTIVO; implementación existente conservada.
 
-400 para campos o UUID inválidos, 404 si no existe. Los requests no aceptan id ni auditoría. [Traslado de UUID y datos](docs/MIGRACION.md).
+400 para campos o UUID inválidos (incluyendo formato de DNI inválido), 404 si no existe y 422 (`DUPLICATE_DNI`) si el DNI ya está registrado. La migración Flyway `V2__add_dni_to_couriers.sql` agrega la columna `dni` con restricción única (`uk_couriers_dni`). Los requests no aceptan id ni auditoría. [Traslado de UUID y datos](docs/MIGRACION.md).
 
 ## Seguridad JWT (S2-15)
 
