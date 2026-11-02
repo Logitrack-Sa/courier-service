@@ -7,6 +7,7 @@ import java.util.UUID;
 public record CourierResponse(
         UUID id,
         String name,
+        String dni,
         String vehicleType,
         CourierStatus status,
         Instant createdAt

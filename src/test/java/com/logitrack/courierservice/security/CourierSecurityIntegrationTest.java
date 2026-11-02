@@ -53,8 +53,8 @@ class CourierSecurityIntegrationTest extends JwtTestSupport {
     @BeforeEach
     void setUp() {
         couriers.deleteAll();
-        courierA = couriers.saveAndFlush(new Courier("Repartidor A", "MOTO"));
-        courierB = couriers.saveAndFlush(new Courier("Repartidor B", "AUTO"));
+        courierA = couriers.saveAndFlush(new Courier("Repartidor A", "38456104", "MOTO"));
+        courierB = couriers.saveAndFlush(new Courier("Repartidor B", "38456105", "AUTO"));
     }
 
     @Test
@@ -103,7 +103,7 @@ class CourierSecurityIntegrationTest extends JwtTestSupport {
 
     @Test
     void adminCanUseCrudAndInternalStatus() throws Exception {
-        var json = "{\"name\":\"Nuevo\",\"vehicleType\":\"BICI\"}";
+        var json = "{\"dni\":\"39234106\",\"name\":\"Nuevo\",\"vehicleType\":\"BICI\"}";
         mvc.perform(post("/api/v1/couriers").header("Authorization", bearer("admin"))
                         .contentType(MediaType.APPLICATION_JSON).content(json))
                 .andExpect(status().isCreated());
@@ -137,7 +137,7 @@ class CourierSecurityIntegrationTest extends JwtTestSupport {
                 .andExpect(status().isForbidden());
         mvc.perform(post("/api/v1/couriers").header("Authorization", bearer(identity))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"X\",\"vehicleType\":\"MOTO\"}"))
+                        .content("{\"dni\":\"39234107\",\"name\":\"X\",\"vehicleType\":\"MOTO\"}"))
                 .andExpect(status().isForbidden());
         mvc.perform(patch("/api/v1/couriers/{id}/status", courierA.getId())
                         .header("Authorization", bearer(identity))
