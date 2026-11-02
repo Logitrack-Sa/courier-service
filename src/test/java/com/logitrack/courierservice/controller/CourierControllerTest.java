@@ -11,8 +11,7 @@ import com.logitrack.courierservice.exception.ResourceNotFoundException;
 import com.logitrack.courierservice.service.implementation.CourierServiceImp;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -30,7 +29,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc(addFilters = false)
 @org.springframework.test.context.ActiveProfiles("test")
 @WebMvcTest(CourierController.class)
-@Import(ObjectMapper.class)
 class CourierControllerTest {
 
     @Autowired
@@ -45,8 +43,8 @@ class CourierControllerTest {
     @Test
     void createCourierReturnsCreated() throws Exception {
         UUID courierId = UUID.randomUUID();
-        CourierRequest request = new CourierRequest("Luis Pérez", "MOTO");
-        CourierResponse response = new CourierResponse(courierId, "Luis Pérez", "MOTO", CourierStatus.ACTIVO, Instant.now());
+        CourierRequest request = new CourierRequest("Luis Pérez", "38456103", "MOTO");
+        CourierResponse response = new CourierResponse(courierId, "Luis Pérez", "38456199", "MOTO", CourierStatus.ACTIVO, Instant.now());
 
         when(courierService.create(any(CourierRequest.class))).thenReturn(response);
 
@@ -87,7 +85,7 @@ class CourierControllerTest {
     @Test
     void getCourierByIdReturnsOk() throws Exception {
         UUID courierId = UUID.randomUUID();
-        CourierResponse response = new CourierResponse(courierId, "Carlos Gómez", "AUTO", CourierStatus.ACTIVO, Instant.now());
+        CourierResponse response = new CourierResponse(courierId, "Carlos Gómez", "38456199", "AUTO", CourierStatus.ACTIVO, Instant.now());
 
         when(courierService.findById(courierId)).thenReturn(response);
 
@@ -111,7 +109,7 @@ class CourierControllerTest {
     void changeStatusReturnsOk() throws Exception {
         UUID courierId = UUID.randomUUID();
         CourierStatusRequest request = new CourierStatusRequest(CourierStatus.INACTIVO);
-        CourierResponse response = new CourierResponse(courierId, "Luis Pérez", "MOTO", CourierStatus.INACTIVO, Instant.now());
+        CourierResponse response = new CourierResponse(courierId, "Luis Pérez", "38456199", "MOTO", CourierStatus.INACTIVO, Instant.now());
 
         when(courierService.changeStatus(eq(courierId), eq(CourierStatus.INACTIVO))).thenReturn(response);
 

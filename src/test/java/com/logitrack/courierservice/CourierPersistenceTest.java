@@ -32,7 +32,7 @@ class CourierPersistenceTest extends JwtTestSupport {
 
     @Test void createAndReadWithRealPersistence() throws Exception {
         var body = http.perform(post("/api/v1/couriers").contentType("application/json")
-                .content("{\"name\":\"Ana\",\"vehicleType\":\"MOTO\"}"))
+                .content("{\"dni\":\"39234100\",\"name\":\"Ana\",\"vehicleType\":\"MOTO\"}"))
                 .andExpect(status().isCreated()).andExpect(header().exists("Location"))
                 .andExpect(jsonPath("$.status").value("ACTIVO"))
                 .andReturn().getResponse().getContentAsString();
@@ -48,21 +48,21 @@ class CourierPersistenceTest extends JwtTestSupport {
     }
     @Test void invalidPayloadDoesNotWrite() throws Exception {
         long before = couriers.count();
-        http.perform(post("/api/v1/couriers").contentType("application/json").content("{\"name\":\" \",\"vehicleType\":\"MOTO\"}"))
+        http.perform(post("/api/v1/couriers").contentType("application/json").content("{\"dni\":\"39234101\",\"name\":\" \",\"vehicleType\":\"MOTO\"}"))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
         assertThat(couriers.count()).isEqualTo(before);
     }
     @Test void callerCannotChooseUuid() throws Exception {
         http.perform(post("/api/v1/couriers").contentType("application/json")
-                .content("{\"name\":\"Ana\",\"vehicleType\":\"MOTO\",\"id\":\""+UUID.randomUUID()+"\"}"))
+                .content("{\"dni\":\"39234102\",\"name\":\"Ana\",\"vehicleType\":\"MOTO\",\"id\":\""+UUID.randomUUID()+"\"}"))
                 .andExpect(status().isBadRequest());
         assertThat(couriers.count()).isZero();
     }
     @Test void updatesPersistAndInactiveCourierIsUnavailable() throws Exception {
-        var courier = couriers.saveAndFlush(new com.logitrack.courierservice.entity.Courier("Antes", "BICI"));
+        var courier = couriers.saveAndFlush(new com.logitrack.courierservice.entity.Courier("Antes", "38456101", "BICI"));
         var id = courier.getId();
         http.perform(put("/api/v1/couriers/"+id).contentType("application/json")
-                .content("{\"name\":\"Después\",\"vehicleType\":\"MOTO\"}"))
+                .content("{\"dni\":\"39234103\",\"name\":\"Después\",\"vehicleType\":\"MOTO\"}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.id").value(id.toString()));
         http.perform(patch("/api/v1/couriers/"+id+"/status").contentType("application/json")
                 .content("{\"status\":\"INACTIVO\"}")).andExpect(status().isOk());
@@ -74,9 +74,9 @@ class CourierPersistenceTest extends JwtTestSupport {
                 .andExpect(status().isNotFound());
     }
     @Test void updateRejectsInvalidAndPrivilegedFieldsWithoutWriting() throws Exception {
-        var courier = couriers.saveAndFlush(new com.logitrack.courierservice.entity.Courier("Original", "BICI"));
-        for (String body : new String[]{"{\"name\":\" \",\"vehicleType\":\"MOTO\"}",
-                "{\"name\":\"Otro\",\"vehicleType\":\"MOTO\",\"id\":\""+UUID.randomUUID()+"\"}"}) {
+        var courier = couriers.saveAndFlush(new com.logitrack.courierservice.entity.Courier("Original", "38456102", "BICI"));
+        for (String body : new String[]{"{\"dni\":\"39234104\",\"name\":\" \",\"vehicleType\":\"MOTO\"}",
+                "{\"dni\":\"39234105\",\"name\":\"Otro\",\"vehicleType\":\"MOTO\",\"id\":\""+UUID.randomUUID()+"\"}"}) {
             http.perform(put("/api/v1/couriers/"+courier.getId()).contentType("application/json").content(body))
                     .andExpect(status().isBadRequest());
         }
@@ -91,8 +91,8 @@ class CourierPersistenceTest extends JwtTestSupport {
         var id = UUID.fromString("482f7f31-e36a-4f8f-b480-5156aeabc401");
         var bytes = HexFormat.of().parseHex(id.toString().replace("-", ""));
         var timestamp = Timestamp.from(Instant.parse("2025-01-02T03:04:05Z"));
-        jdbc.update("INSERT INTO couriers(id,name,vehicle_type,status,created_at,updated_at,created_by,last_modified_by,version) VALUES(?,?,?,?,?,?,?,?,?)",
-                bytes,"Importado","BICI","INACTIVO",timestamp,timestamp,"legacy-admin","legacy-editor",7L);
+        jdbc.update("INSERT INTO couriers(id,name,dni,vehicle_type,status,created_at,updated_at,created_by,last_modified_by,version) VALUES(?,?,?,?,?,?,?,?,?,?)",
+                bytes,"Importado","39234999","BICI","INACTIVO",timestamp,timestamp,"legacy-admin","legacy-editor",7L);
         entities.clear();
         var imported = couriers.findById(id).orElseThrow();
         assertThat(imported.getName()).isEqualTo("Importado");

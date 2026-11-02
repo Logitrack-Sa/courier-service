@@ -34,3 +34,13 @@ Variables requeridas: `JWT_PUBLIC_KEY_LOCATION` (PEM público), `JWT_KEY_ID`, `J
 Disponibilidad, estado interno, seguridad, Config Client y Docker están integrados. Los perfiles dev/prod reciben de Config Server el issuer, audience y kid mediante variables obligatorias, sin valores implícitos. El servicio escucha solo en 127.0.0.1 por defecto; la imagen configura `SERVER_ADDRESS=0.0.0.0` para su red Docker. No agregar entidades ni dependencias de shipment.
 
 [Contrato del equipo](https://github.com/Logitrack-Sa/shipment-service/blob/main/docs/sprint2/CONTRATOS.md) · [Tablero](https://github.com/orgs/Logitrack-Sa/projects/2). La revisión IA no sustituye tests ni revisión humana.
+
+## Registro en Eureka - Sprint 3 (#78)
+
+Usar `SPRING_PROFILES_ACTIVE=prod,sprint3` y `CONFIG_SERVER_URL` para obtener
+las propiedades centralizadas. En Compose, `EUREKA_SERVER_URL=http://eureka-server:8065/eureka/`
+y `SERVICE_HOST=courier-service` anuncian un nombre alcanzable desde el Gateway.
+El cliente se registra como `COURIER-SERVICE`. El perfil test desactiva
+el descubrimiento para que las suites aisladas no dependan de infraestructura.
+Sin el perfil sprint3, `EUREKA_CLIENT_ENABLED=false` conserva el arranque del Sprint 2.
+La prueba distribuida debe comprobar registro UP, puerto anunciado y renovacion.
