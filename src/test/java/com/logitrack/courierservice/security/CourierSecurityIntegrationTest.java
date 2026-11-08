@@ -59,6 +59,7 @@ class CourierSecurityIntegrationTest extends JwtTestSupport {
 
     @Test
     void requiresTokenAndReturnsStructured401() throws Exception {
+        mvc.perform(get("/actuator/prometheus")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/v1/couriers"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(header().string("WWW-Authenticate", "Bearer"))

@@ -1,5 +1,8 @@
 package com.logitrack.courierservice.security;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authorization.AuthorizationDecision;
+
 import java.io.IOException;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -74,6 +77,7 @@ public class SecurityConfig {
      */
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                            @Value("${logitrack.metrics.anonymous-enabled:false}") boolean anonymousMetrics,
                                             SecurityErrors errors,
                                             InternalCourierAuthorization internalCourierAuthorization)
             throws Exception {
@@ -87,6 +91,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .requestCache(cache -> cache.disable())
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.GET, "/actuator/prometheus")
+                        .access((authentication, context) -> new AuthorizationDecision(anonymousMetrics))
                         .requestMatchers(HttpMethod.GET, PUBLIC_GET_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/internal/couriers/*/status")
                         .access(internalCourierAuthorization)
