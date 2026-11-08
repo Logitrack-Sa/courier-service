@@ -46,6 +46,6 @@ public class Courier extends BaseEntity {
     }
 
     public boolean isAvailable() {
-        return status == CourierStatus.ACTIVO;
+        return status != null && status.isAvailable();
     }
 }
