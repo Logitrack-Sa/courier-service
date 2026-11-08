@@ -18,6 +18,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -55,6 +56,11 @@ class CourierSecurityIntegrationTest extends JwtTestSupport {
         couriers.deleteAll();
         courierA = couriers.saveAndFlush(new Courier("Repartidor A", "38456104", "MOTO"));
         courierB = couriers.saveAndFlush(new Courier("Repartidor B", "38456105", "AUTO"));
+    }
+
+    @AfterEach
+    void tearDown() {
+        couriers.deleteAll();
     }
 
     @Test

@@ -8,6 +8,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -29,6 +30,11 @@ class CourierPersistenceTest extends JwtTestSupport {
     @Autowired CourierRepository couriers;
     @Autowired JdbcTemplate jdbc;
     @Autowired EntityManager entities;
+
+    @BeforeEach
+    void setUp() {
+        couriers.deleteAll();
+    }
 
     @Test void createAndReadWithRealPersistence() throws Exception {
         var body = http.perform(post("/api/v1/couriers").contentType("application/json")
@@ -53,10 +59,11 @@ class CourierPersistenceTest extends JwtTestSupport {
         assertThat(couriers.count()).isEqualTo(before);
     }
     @Test void callerCannotChooseUuid() throws Exception {
+        long before = couriers.count();
         http.perform(post("/api/v1/couriers").contentType("application/json")
                 .content("{\"dni\":\"39234102\",\"name\":\"Ana\",\"vehicleType\":\"MOTO\",\"id\":\""+UUID.randomUUID()+"\"}"))
                 .andExpect(status().isBadRequest());
-        assertThat(couriers.count()).isZero();
+        assertThat(couriers.count()).isEqualTo(before);
     }
     @Test void updatesPersistAndInactiveCourierIsUnavailable() throws Exception {
         var courier = couriers.saveAndFlush(new com.logitrack.courierservice.entity.Courier("Antes", "38456101", "BICI"));
