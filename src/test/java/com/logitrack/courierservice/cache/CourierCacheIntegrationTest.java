@@ -42,6 +42,9 @@ class CourierCacheIntegrationTest extends JwtTestSupport {
     @Autowired
     private CacheManager cacheManager;
 
+    @Autowired
+    private RedisCacheConfig redisCacheConfig;
+
     private Courier courier;
 
     @BeforeEach
@@ -59,6 +62,9 @@ class CourierCacheIntegrationTest extends JwtTestSupport {
 
     private void cleanAll() {
         courierRepository.deleteAll();
+        if (redisCacheConfig != null) {
+            redisCacheConfig.resetDegradation();
+        }
         Cache cache = cacheManager.getCache(RedisCacheConfig.COURIERS_AVAILABLE_CACHE);
         if (cache != null) {
             cache.clear();
@@ -191,5 +197,19 @@ class CourierCacheIntegrationTest extends JwtTestSupport {
 
         assertThat(courierRepository.findById(courier.getId()).orElseThrow().getStatus())
                 .isEqualTo(CourierStatus.AVAILABLE);
+    }
+
+    @Test
+    void whenEvictionFails_thenCacheIsMarkedUnreliableAndBypassed() {
+        redisCacheConfig.markEvictionFailed();
+        assertThat(redisCacheConfig.isCacheReliable()).isFalse();
+
+        PageRequest pageable = PageRequest.of(0, 20);
+        courierService.findAll(CourierStatus.AVAILABLE, pageable);
+
+        Cache cache = cacheManager.getCache(RedisCacheConfig.COURIERS_AVAILABLE_CACHE);
+        assertThat(cache).isNotNull();
+        String cacheKey = "status:AVAILABLE:page:0:size:20:sort:UNSORTED";
+        assertThat(cache.get(cacheKey)).isNull();
     }
 }

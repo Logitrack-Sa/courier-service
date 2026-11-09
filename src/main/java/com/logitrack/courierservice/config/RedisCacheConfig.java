@@ -29,12 +29,27 @@ import java.time.Duration;
  * serialización JSON para listas paginadas y tolerancia a caídas de Redis.
  */
 @Slf4j
-@Configuration
+@Configuration("redisCacheConfig")
 @EnableCaching
 public class RedisCacheConfig implements CachingConfigurer {
 
     public static final String COURIERS_AVAILABLE_CACHE = "couriers_available";
     public static final Duration COURIERS_AVAILABLE_TTL = Duration.ofMinutes(5);
+
+    private final java.util.concurrent.atomic.AtomicReference<java.time.Instant> evictionFailureExpiration =
+            new java.util.concurrent.atomic.AtomicReference<>(java.time.Instant.MIN);
+
+    public boolean isCacheReliable() {
+        return java.time.Instant.now().isAfter(evictionFailureExpiration.get());
+    }
+
+    public void markEvictionFailed() {
+        evictionFailureExpiration.set(java.time.Instant.now().plus(COURIERS_AVAILABLE_TTL));
+    }
+
+    public void resetDegradation() {
+        evictionFailureExpiration.set(java.time.Instant.MIN);
+    }
 
     @Bean
     public RedisCacheManagerBuilderCustomizer courierCacheCustomizer(ObjectMapper objectMapper) {
@@ -79,14 +94,16 @@ public class RedisCacheConfig implements CachingConfigurer {
 
             @Override
             public void handleCacheEvictError(RuntimeException exception, Cache cache, Object key) {
-                log.warn("Error al desalojar clave '{}' de caché '{}': {}",
+                log.warn("Error al desalojar clave '{}' de caché '{}'. Marcando caché como no confiable para forzar lecturas desde BD: {}",
                         key, cache != null ? cache.getName() : "desconocida", exception.getMessage());
+                markEvictionFailed();
             }
 
             @Override
             public void handleCacheClearError(RuntimeException exception, Cache cache) {
-                log.warn("Error al limpiar caché '{}': {}",
+                log.warn("Error al limpiar caché '{}'. Marcando caché como no confiable para forzar lecturas desde BD: {}",
                         cache != null ? cache.getName() : "desconocida", exception.getMessage());
+                markEvictionFailed();
             }
         };
     }
