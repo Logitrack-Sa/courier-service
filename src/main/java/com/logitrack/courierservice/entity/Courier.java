@@ -29,6 +29,10 @@ public class Courier extends BaseEntity {
     @Column(nullable = false, length = 20)
     private CourierStatus status = CourierStatus.ACTIVO;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private CourierAvailability availability = CourierAvailability.AVAILABLE;
+
     public Courier(String name, String dni, String vehicleType) {
         this.name = name;
         this.dni = dni;
@@ -46,6 +50,11 @@ public class Courier extends BaseEntity {
     }
 
     public boolean isAvailable() {
-        return status == CourierStatus.ACTIVO;
+        return status == CourierStatus.ACTIVO && availability == CourierAvailability.AVAILABLE;
+    }
+
+    public void changeAvailability(CourierAvailability newAvailability) {
+        this.availability = Objects.requireNonNull(newAvailability,
+                "La disponibilidad no puede ser nula");
     }
 }

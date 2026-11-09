@@ -87,7 +87,9 @@ public class CourierController {
     @GetMapping("/{id}/availability")
     @Operation(
             summary = "Consultar disponibilidad de un repartidor",
-            description = "Devuelve el courierId, status y un booleano 'available' (ACTIVO -> true, INACTIVO -> false). Retorna 404 si el repartidor no existe."
+            description = "Status es una proyección ACTIVO/INACTIVO compatible con shipment-service: "
+                    + "ACTIVO solo cuando la habilitación administrativa es ACTIVO y la disponibilidad "
+                    + "operativa es AVAILABLE. La disponibilidad real se expone en el recurso Courier."
     )
     public CourierAvailabilityResponse getAvailability(@PathVariable UUID id) {
         log.debug("GET /api/v1/couriers/{}/availability", id);

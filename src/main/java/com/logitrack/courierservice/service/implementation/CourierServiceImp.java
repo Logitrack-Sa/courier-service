@@ -32,9 +32,11 @@ public class CourierServiceImp implements CourierService {
         log.debug("Consultando disponibilidad para repartidor id={}", id);
         Courier courier = findEntity(id);
         boolean available = courier.isAvailable();
+        CourierStatus compatibilityStatus = available
+                ? CourierStatus.ACTIVO : CourierStatus.INACTIVO;
         return new com.logitrack.courierservice.dto.CourierAvailabilityResponse(
                 courier.getId(),
-                courier.getStatus(),
+                compatibilityStatus,
                 available
         );
     }
