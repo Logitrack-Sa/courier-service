@@ -8,6 +8,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -29,6 +30,11 @@ class CourierPersistenceTest extends JwtTestSupport {
     @Autowired CourierRepository couriers;
     @Autowired JdbcTemplate jdbc;
     @Autowired EntityManager entities;
+
+    @BeforeEach
+    void setUp() {
+        couriers.deleteAll();
+    }
 
     @Test void createAndReadWithRealPersistence() throws Exception {
         var body = http.perform(post("/api/v1/couriers").contentType("application/json")
