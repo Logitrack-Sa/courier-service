@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +33,7 @@ public class RestPageImpl<T> extends PageImpl<T> {
             @JsonProperty("empty") boolean empty
     ) {
         super(content != null ? content : new ArrayList<>(),
-                PageRequest.of(number, size > 0 ? size : 20),
+                PageRequest.of(number, size > 0 ? size : 20, extractSort(sort)),
                 totalElements != null ? totalElements : 0L);
     }
 
@@ -46,5 +47,26 @@ public class RestPageImpl<T> extends PageImpl<T> {
 
     public RestPageImpl() {
         super(new ArrayList<>());
+    }
+
+    private static Sort extractSort(JsonNode sortNode) {
+        if (sortNode == null) {
+            return Sort.unsorted();
+        }
+        JsonNode ordersNode = sortNode.has("orders") ? sortNode.get("orders") : sortNode;
+        if (ordersNode != null && ordersNode.isArray() && !ordersNode.isEmpty()) {
+            List<Sort.Order> orders = new ArrayList<>();
+            for (JsonNode order : ordersNode) {
+                String property = order.has("property") ? order.get("property").asText() : null;
+                String direction = order.has("direction") ? order.get("direction").asText() : "ASC";
+                if (property != null && !property.isBlank()) {
+                    orders.add(new Sort.Order(Sort.Direction.fromString(direction), property));
+                }
+            }
+            if (!orders.isEmpty()) {
+                return Sort.by(orders);
+            }
+        }
+        return Sort.unsorted();
     }
 }
