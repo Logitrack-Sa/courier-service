@@ -19,6 +19,7 @@ public class CourierMapper {
                 courier.getDni(),
                 courier.getVehicleType(),
                 courier.getStatus(),
+                courier.getAvailability(),
                 courier.getCreatedAt()
         );
     }

@@ -1,6 +1,6 @@
 package com.logitrack.courierservice.entity;
 
-/** Disponibilidad de un repartidor para recibir asignaciones. */
+/** Habilitación administrativa de un repartidor. */
 public enum CourierStatus {
     ACTIVO, INACTIVO
 }

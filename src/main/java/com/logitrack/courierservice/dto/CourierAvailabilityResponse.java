@@ -8,9 +8,10 @@ public record CourierAvailabilityResponse(
         @Schema(description = "ID único del repartidor", example = "123e4567-e89b-12d3-a456-426614174000")
         UUID courierId,
 
-        @Schema(description = "Estado actual del repartidor", example = "ACTIVO")
+        @Schema(description = "Proyección ACTIVO/INACTIVO compatible con shipment-service; "
+                + "no es el estado administrativo persistido", example = "ACTIVO")
         CourierStatus status,
 
-        @Schema(description = "Disponibilidad del repartidor (ACTIVO -> true, INACTIVO -> false)", example = "true")
+        @Schema(description = "Disponibilidad efectiva: habilitación ACTIVO y disponibilidad AVAILABLE", example = "true")
         boolean available
 ) {}
