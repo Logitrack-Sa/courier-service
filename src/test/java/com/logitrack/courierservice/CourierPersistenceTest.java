@@ -53,10 +53,11 @@ class CourierPersistenceTest extends JwtTestSupport {
         assertThat(couriers.count()).isEqualTo(before);
     }
     @Test void callerCannotChooseUuid() throws Exception {
+        long before = couriers.count();
         http.perform(post("/api/v1/couriers").contentType("application/json")
                 .content("{\"dni\":\"39234102\",\"name\":\"Ana\",\"vehicleType\":\"MOTO\",\"id\":\""+UUID.randomUUID()+"\"}"))
                 .andExpect(status().isBadRequest());
-        assertThat(couriers.count()).isZero();
+        assertThat(couriers.count()).isEqualTo(before);
     }
     @Test void updatesPersistAndInactiveCourierIsUnavailable() throws Exception {
         var courier = couriers.saveAndFlush(new com.logitrack.courierservice.entity.Courier("Antes", "38456101", "BICI"));
