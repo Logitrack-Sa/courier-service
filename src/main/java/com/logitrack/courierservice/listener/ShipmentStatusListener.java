@@ -1,6 +1,7 @@
 package com.logitrack.courierservice.listener;
 
 import com.logitrack.courierservice.config.RabbitMQConfig;
+import com.logitrack.courierservice.config.RedisCacheConfig;
 import com.logitrack.courierservice.dto.ShipmentStatusChangedEvent;
 import com.logitrack.courierservice.entity.CourierStatus;
 import com.logitrack.courierservice.exception.ResourceNotFoundException;
@@ -8,6 +9,7 @@ import com.logitrack.courierservice.service.CourierService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -24,6 +26,11 @@ public class ShipmentStatusListener {
     private final CourierService courierService;
 
     @RabbitListener(queues = RabbitMQConfig.COURIER_SHIPMENT_STATUS_QUEUE)
+    @CacheEvict(
+            value = RedisCacheConfig.COURIERS_AVAILABLE_CACHE,
+            allEntries = true,
+            condition = "#event.currentStatus != null && ('EN_RUTA'.equalsIgnoreCase(#event.currentStatus) || 'ENTREGADO'.equalsIgnoreCase(#event.currentStatus) || 'CANCELADO'.equalsIgnoreCase(#event.currentStatus))"
+    )
     public void handleShipmentStatusChanged(ShipmentStatusChangedEvent event) {
         log.info("Evento recibido en {}: eventId={}, shipmentId={}, trackingCode={}, courierId={}, status={} -> {}",
                 RabbitMQConfig.COURIER_SHIPMENT_STATUS_QUEUE,
