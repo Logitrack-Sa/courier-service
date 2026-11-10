@@ -58,6 +58,20 @@ class CourierPersistenceTest extends JwtTestSupport {
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
         assertThat(couriers.count()).isEqualTo(before);
     }
+    @Test void availabilityFilterIncludesLegacyRowsButExcludesBusyCouriers() {
+        var legacy = new com.logitrack.courierservice.entity.Courier("Legacy", "39234991", "MOTO");
+        var modern = new com.logitrack.courierservice.entity.Courier("Modern", "39234992", "MOTO");
+        modern.changeStatus(CourierStatus.AVAILABLE);
+        var busy = new com.logitrack.courierservice.entity.Courier("Busy", "39234993", "MOTO");
+        busy.changeStatus(CourierStatus.BUSY);
+        couriers.saveAllAndFlush(java.util.List.of(legacy, modern, busy));
+        var page = org.springframework.data.domain.Pageable.ofSize(20);
+        assertThat(couriers.findByStatus(CourierStatus.AVAILABLE, page).getContent())
+                .extracting(c -> c.getDni()).containsExactlyInAnyOrder("39234991", "39234992");
+        assertThat(couriers.findByStatus(CourierStatus.ACTIVO, page).getTotalElements()).isEqualTo(2);
+        assertThat(couriers.findByStatus(CourierStatus.BUSY, page).getContent())
+                .extracting(c -> c.getDni()).containsExactly("39234993");
+    }
     @Test void callerCannotChooseUuid() throws Exception {
         long before = couriers.count();
         http.perform(post("/api/v1/couriers").contentType("application/json")
