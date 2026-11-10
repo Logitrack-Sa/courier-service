@@ -12,7 +12,7 @@ import org.springframework.validation.annotation.Validated;
  *
  * <p>La clave pública se monta por entorno y nunca se versiona en el
  * repositorio. El {@code kid}, el emisor y la audiencia son valores no
- * sensibles que forman parte del contrato de identidad del Sprint 2.</p>
+ * sensibles que forman parte del contrato de identidad de LogiTrack.</p>
  *
  * @param publicKeyLocation ubicación de la clave pública RSA en formato PEM.
  * @param keyId identificador de la clave que debe coincidir con el header
