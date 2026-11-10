@@ -1,0 +1,511 @@
+{
+	"info": {
+		"_postman_id": "c4d18070-1070-4f9e-a890-courier-sprint4",
+		"name": "LogiTrack - Sprint 4 - Courier RabbitMQ (Issue #107)",
+		"description": "Colección de Postman para verificar el consumo asíncrono de eventos RabbitMQ en courier-service y la actualización automática de disponibilidad de repartidores (Issue #107).\n\nFlujo de verificación:\n1. Autenticación con admin en Gateway (8080) o Security Service (8083).\n2. Consultar repartidor inicial (AVAILABLE / ACTIVO).\n3. Publicar evento EN_RUTA en shipment.topic.exchange -> Courier pasa a BUSY.\n4. Publicar evento ENTREGADO -> Courier pasa a AVAILABLE.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "courierId",
+			"value": "a23bc0d1-1fbb-4484-8444-36933d3ff17e",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "01 - Autenticación",
+			"item": [
+				{
+					"name": "1. Login Admin (Gateway 8080)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Login exitoso (200 OK)\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var data = pm.response.json();",
+									"if (data.accessToken) {",
+									"    pm.collectionVariables.set(\"token\", data.accessToken);",
+									"    pm.collectionVariables.set(\"bearerToken\", data.accessToken);",
+									"    pm.environment.set(\"token\", data.accessToken);",
+									"    pm.environment.set(\"admin_token\", data.accessToken);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"{{adminUsername}}\",\n  \"email\": \"{{adminUsername}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+						},
+						"url": "http://localhost:8080/api/v1/auth/login"
+					}
+				},
+				{
+					"name": "1.1 Login Admin (Directo Security Service 8083)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Login exitoso (200 OK)\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var data = pm.response.json();",
+									"if (data.accessToken) {",
+									"    pm.collectionVariables.set(\"token\", data.accessToken);",
+									"    pm.collectionVariables.set(\"bearerToken\", data.accessToken);",
+									"    pm.environment.set(\"token\", data.accessToken);",
+									"    pm.environment.set(\"admin_token\", data.accessToken);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"{{adminUsername}}\",\n  \"email\": \"{{adminUsername}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+						},
+						"url": "http://localhost:8083/api/v1/auth/login"
+					}
+				}
+			]
+		},
+		{
+			"name": "02 - Estado Inicial",
+			"item": [
+				{
+					"name": "2. Listar Repartidores",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Lista obtenida exitosamente\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var data = pm.response.json();",
+									"if (data.content && data.content.length > 0) {",
+									"    var activeCourier = data.content.find(function(c) { return c.status === 'AVAILABLE' || c.status === 'ACTIVO'; });",
+									"    var selectedId = activeCourier ? activeCourier.id : data.content[0].id;",
+									"    pm.collectionVariables.set(\"courierId\", selectedId);",
+									"    pm.environment.set(\"courierId\", selectedId);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:8080/api/v1/couriers"
+					}
+				},
+				{
+					"name": "3. Consultar Disponibilidad Inicial (Debe ser true)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status HTTP 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var data = pm.response.json();",
+									"pm.test(\"Repartidor inicialmente disponible\", function () {",
+									"    pm.expect(data.available).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:8080/api/v1/couriers/{{courierId}}/availability"
+					}
+				}
+			]
+		},
+		{
+			"name": "03 - Evento EN_RUTA (Transición a BUSY)",
+			"item": [
+				{
+					"name": "4. Publicar Evento EN_RUTA en RabbitMQ",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Mensaje enrutado con éxito por RabbitMQ\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    var data = pm.response.json();",
+									"    pm.expect(data.routed).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{rabbitmqUsername}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{rabbitmqPassword}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"properties\": {\n    \"content_type\": \"application/json\"\n  },\n  \"routing_key\": \"shipment.status.en_ruta\",\n  \"payload\": \"{\\\"eventId\\\":\\\"{{$guid}}\\\",\\\"shipmentId\\\":\\\"{{$guid}}\\\",\\\"trackingCode\\\":\\\"TRK-TEST-001\\\",\\\"courierId\\\":\\\"{{courierId}}\\\",\\\"previousStatus\\\":\\\"PENDIENTE\\\",\\\"currentStatus\\\":\\\"EN_RUTA\\\",\\\"occurredAt\\\":\\\"{{$isoTimestamp}}\\\"}\",\n  \"payload_encoding\": \"string\"\n}"
+						},
+						"url": "http://localhost:15672/api/exchanges/%2F/shipment.topic.exchange/publish"
+					}
+				},
+				{
+					"name": "5. Verificar Repartidor Ocupado (BUSY / available: false)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status HTTP 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var data = pm.response.json();",
+									"pm.test(\"Repartidor paso a estado BUSY\", function () {",
+									"    pm.expect(data.status).to.eql(\"BUSY\");",
+									"});",
+									"pm.test(\"Repartidor ya NO esta disponible\", function () {",
+									"    pm.expect(data.available).to.be.false;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:8080/api/v1/couriers/{{courierId}}/availability"
+					}
+				}
+			]
+		},
+		{
+			"name": "04 - Evento ENTREGADO (Liberación a AVAILABLE)",
+			"item": [
+				{
+					"name": "6. Publicar Evento ENTREGADO en RabbitMQ",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Mensaje ENTREGADO enrutado con éxito\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    var data = pm.response.json();",
+									"    pm.expect(data.routed).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{rabbitmqUsername}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{rabbitmqPassword}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"properties\": {\n    \"content_type\": \"application/json\"\n  },\n  \"routing_key\": \"shipment.status.entregado\",\n  \"payload\": \"{\\\"eventId\\\":\\\"{{$guid}}\\\",\\\"shipmentId\\\":\\\"{{$guid}}\\\",\\\"trackingCode\\\":\\\"TRK-TEST-001\\\",\\\"courierId\\\":\\\"{{courierId}}\\\",\\\"previousStatus\\\":\\\"EN_RUTA\\\",\\\"currentStatus\\\":\\\"ENTREGADO\\\",\\\"occurredAt\\\":\\\"{{$isoTimestamp}}\\\"}\",\n  \"payload_encoding\": \"string\"\n}"
+						},
+						"url": "http://localhost:15672/api/exchanges/%2F/shipment.topic.exchange/publish"
+					}
+				},
+				{
+					"name": "7. Verificar Repartidor Liberado (AVAILABLE / available: true)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status HTTP 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var data = pm.response.json();",
+									"pm.test(\"Repartidor paso a estado AVAILABLE\", function () {",
+									"    pm.expect(data.status).to.eql(\"AVAILABLE\");",
+									"});",
+									"pm.test(\"Repartidor volvio a estar disponible\", function () {",
+									"    pm.expect(data.available).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:8080/api/v1/couriers/{{courierId}}/availability"
+					}
+				}
+			]
+		},
+		{
+			"name": "05 - Resiliencia y Casos Borde",
+			"item": [
+				{
+					"name": "8. Evento CANCELADO (Libera a AVAILABLE)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Mensaje CANCELADO enrutado con éxito\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    var data = pm.response.json();",
+									"    pm.expect(data.routed).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{rabbitmqUsername}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{rabbitmqPassword}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"properties\": {\n    \"content_type\": \"application/json\"\n  },\n  \"routing_key\": \"shipment.status.cancelado\",\n  \"payload\": \"{\\\"eventId\\\":\\\"{{$guid}}\\\",\\\"shipmentId\\\":\\\"{{$guid}}\\\",\\\"courierId\\\":\\\"{{courierId}}\\\",\\\"previousStatus\\\":\\\"EN_RUTA\\\",\\\"currentStatus\\\":\\\"CANCELADO\\\",\\\"occurredAt\\\":\\\"{{$isoTimestamp}}\\\"}\",\n  \"payload_encoding\": \"string\"\n}"
+						},
+						"url": "http://localhost:15672/api/exchanges/%2F/shipment.topic.exchange/publish"
+					}
+				},
+				{
+					"name": "9. Evento sin Courier (Ignorado con seguridad)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Mensaje sin courier aceptado sin romper el consumidor\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    var data = pm.response.json();",
+									"    pm.expect(data.routed).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{rabbitmqUsername}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{rabbitmqPassword}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"properties\": {\n    \"content_type\": \"application/json\"\n  },\n  \"routing_key\": \"shipment.status.en_ruta\",\n  \"payload\": \"{\\\"eventId\\\":\\\"{{$guid}}\\\",\\\"shipmentId\\\":\\\"{{$guid}}\\\",\\\"courierId\\\":null,\\\"previousStatus\\\":\\\"PENDIENTE\\\",\\\"currentStatus\\\":\\\"EN_RUTA\\\",\\\"occurredAt\\\":\\\"{{$isoTimestamp}}\\\"}\",\n  \"payload_encoding\": \"string\"\n}"
+						},
+						"url": "http://localhost:15672/api/exchanges/%2F/shipment.topic.exchange/publish"
+					}
+				},
+				{
+					"name": "10. Evento con Courier Inexistente (Manejado con advertencia)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Mensaje con ID desconocido procesado sin error bloqueante\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    var data = pm.response.json();",
+									"    pm.expect(data.routed).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{rabbitmqUsername}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{rabbitmqPassword}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"properties\": {\n    \"content_type\": \"application/json\"\n  },\n  \"routing_key\": \"shipment.status.en_ruta\",\n  \"payload\": \"{\\\"eventId\\\":\\\"{{$guid}}\\\",\\\"shipmentId\\\":\\\"{{$guid}}\\\",\\\"courierId\\\":\\\"00000000-0000-0000-0000-000000000000\\\",\\\"previousStatus\\\":\\\"PENDIENTE\\\",\\\"currentStatus\\\":\\\"EN_RUTA\\\",\\\"occurredAt\\\":\\\"{{$isoTimestamp}}\\\"}\",\n  \"payload_encoding\": \"string\"\n}"
+						},
+						"url": "http://localhost:15672/api/exchanges/%2F/shipment.topic.exchange/publish"
+					}
+				}
+			]
+		}
+	]
+}

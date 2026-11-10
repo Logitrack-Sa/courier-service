@@ -1,7 +1,9 @@
 package com.logitrack.courierservice.service.implementation;
 
+import com.logitrack.courierservice.config.RedisCacheConfig;
 import com.logitrack.courierservice.dto.CourierRequest;
 import com.logitrack.courierservice.dto.CourierResponse;
+import com.logitrack.courierservice.dto.RestPageImpl;
 import com.logitrack.courierservice.entity.Courier;
 import com.logitrack.courierservice.entity.CourierStatus;
 import com.logitrack.courierservice.exception.BusinessRuleException;
@@ -9,10 +11,13 @@ import com.logitrack.courierservice.exception.ResourceNotFoundException;
 import com.logitrack.courierservice.mapper.CourierMapper;
 import com.logitrack.courierservice.repository.CourierRepository;
 import com.logitrack.courierservice.service.CourierService;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -40,6 +45,7 @@ public class CourierServiceImp implements CourierService {
     }
 
     @Transactional
+    @CacheEvict(value = RedisCacheConfig.COURIERS_AVAILABLE_CACHE, allEntries = true)
     public CourierResponse update(UUID id, CourierRequest request) {
         Courier courier = findEntity(id);
         if (courierRepository.existsByDniAndIdNot(request.dni(), id)) {
@@ -52,6 +58,7 @@ public class CourierServiceImp implements CourierService {
     }
 
     @Transactional
+    @CacheEvict(value = RedisCacheConfig.COURIERS_AVAILABLE_CACHE, allEntries = true)
     public CourierResponse create(CourierRequest request) {
         if (courierRepository.existsByDni(request.dni())) {
             throw new BusinessRuleException("DUPLICATE_DNI",
@@ -72,6 +79,11 @@ public class CourierServiceImp implements CourierService {
      * Lista repartidores. Si {@code status} es nulo, devuelve todos.
      */
     @Transactional(readOnly = true)
+    @Cacheable(
+            value = RedisCacheConfig.COURIERS_AVAILABLE_CACHE,
+            key = "'status:' + #status + ':page:' + #pageable.pageNumber + ':size:' + #pageable.pageSize + ':sort:' + #pageable.sort",
+            condition = "#status != null && (#status.name() == 'AVAILABLE' || #status.name() == 'ACTIVO') && @redisCacheConfig.isCacheReliable()"
+    )
     public Page<CourierResponse> findAll(CourierStatus status, Pageable pageable) {
         log.debug("Listando repartidores status={} page={} size={}",
                 status, pageable.getPageNumber(), pageable.getPageSize());
@@ -80,7 +92,11 @@ public class CourierServiceImp implements CourierService {
                 ? courierRepository.findAll(pageable)
                 : courierRepository.findByStatus(status, pageable);
 
-        return page.map(courierMapper::toResponse);
+        List<CourierResponse> content = page.getContent().stream()
+                .map(courierMapper::toResponse)
+                .toList();
+
+        return new RestPageImpl<>(content, pageable, page.getTotalElements());
     }
 
     /**
@@ -88,6 +104,7 @@ public class CourierServiceImp implements CourierService {
      * transacción, el cambio se persiste al hacer commit (dirty checking).
      */
     @Transactional
+    @CacheEvict(value = RedisCacheConfig.COURIERS_AVAILABLE_CACHE, allEntries = true)
     public CourierResponse changeStatus(UUID id, CourierStatus newStatus) {
         Courier courier = findEntity(id);
         CourierStatus previous = courier.getStatus();

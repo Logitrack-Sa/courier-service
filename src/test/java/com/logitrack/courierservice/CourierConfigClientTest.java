@@ -36,6 +36,8 @@ class CourierConfigClientTest extends JwtTestSupport {
                         "--spring.datasource.driver-class-name=org.h2.Driver", "--spring.datasource.username=sa",
                         "--spring.datasource.password=", "--spring.flyway.enabled=false",
                         "--spring.jpa.hibernate.ddl-auto=create-drop",
+                        "--spring.rabbitmq.listener.simple.auto-startup=false",
+                        "--spring.cache.type=none",
                         "--logitrack.security.public-key-location="+PUBLIC_KEY.toUri())) {
             assertThat(calls.get()).isPositive();
             assertThat(context.getBean(JwtProperties.class).issuer()).isEqualTo("https://remote-config.test");
