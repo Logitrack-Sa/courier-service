@@ -6,24 +6,21 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import jakarta.persistence.LockModeType;
+import java.util.Optional;
 
 public interface CourierRepository extends JpaRepository<Courier, UUID> {
 
-    @Query("""
-            select c from Courier c where c.status = :status
-            or (:status in (com.logitrack.courierservice.entity.CourierStatus.AVAILABLE,
-                            com.logitrack.courierservice.entity.CourierStatus.ACTIVO)
-                and c.status in (com.logitrack.courierservice.entity.CourierStatus.AVAILABLE,
-                                 com.logitrack.courierservice.entity.CourierStatus.ACTIVO))
-            or (:status in (com.logitrack.courierservice.entity.CourierStatus.INACTIVE,
-                            com.logitrack.courierservice.entity.CourierStatus.INACTIVO)
-                and c.status in (com.logitrack.courierservice.entity.CourierStatus.INACTIVE,
-                                 com.logitrack.courierservice.entity.CourierStatus.INACTIVO))
-            """)
     Page<Courier> findByStatus(CourierStatus status, Pageable pageable);
 
     boolean existsByDni(String dni);
 
     boolean existsByDniAndIdNot(String dni, UUID id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select courier from Courier courier where courier.id = :id")
+    Optional<Courier> findByIdForUpdate(@Param("id") UUID id);
 }

@@ -11,6 +11,6 @@ public record CourierAvailabilityResponse(
         @Schema(description = "Estado actual del repartidor", example = "ACTIVO")
         CourierStatus status,
 
-        @Schema(description = "Disponibilidad del repartidor (ACTIVO -> true, INACTIVO -> false)", example = "true")
+        @Schema(description = "Indica si está activo y libre para recibir asignaciones", example = "true")
         boolean available
 ) {}

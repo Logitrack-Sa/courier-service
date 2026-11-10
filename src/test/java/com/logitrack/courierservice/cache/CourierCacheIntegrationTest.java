@@ -3,10 +3,11 @@ package com.logitrack.courierservice.cache;
 import com.logitrack.courierservice.config.RedisCacheConfig;
 import com.logitrack.courierservice.dto.CourierRequest;
 import com.logitrack.courierservice.dto.CourierResponse;
-import com.logitrack.courierservice.dto.ShipmentStatusChangedEvent;
+import com.logitrack.courierservice.messaging.ShipmentStatusChangedEvent;
+import com.logitrack.courierservice.messaging.ShipmentStatus;
 import com.logitrack.courierservice.entity.Courier;
 import com.logitrack.courierservice.entity.CourierStatus;
-import com.logitrack.courierservice.listener.ShipmentStatusListener;
+import com.logitrack.courierservice.messaging.ShipmentStatusEventListener;
 import com.logitrack.courierservice.repository.CourierRepository;
 import com.logitrack.courierservice.service.CourierService;
 import com.logitrack.courierservice.support.JwtTestSupport;
@@ -34,7 +35,7 @@ class CourierCacheIntegrationTest extends JwtTestSupport {
     private CourierService courierService;
 
     @Autowired
-    private ShipmentStatusListener shipmentStatusListener;
+    private ShipmentStatusEventListener shipmentStatusListener;
 
     @Autowired
     private CourierRepository courierRepository;
@@ -51,7 +52,7 @@ class CourierCacheIntegrationTest extends JwtTestSupport {
     void setUp() {
         cleanAll();
         courier = new Courier("Repartidor Cache", "39999001", "MOTO");
-        courier.changeStatus(CourierStatus.AVAILABLE);
+        courier.changeStatus(CourierStatus.ACTIVO);
         courier = courierRepository.saveAndFlush(courier);
     }
 
@@ -75,14 +76,14 @@ class CourierCacheIntegrationTest extends JwtTestSupport {
     void whenFindAllWithStatusAvailable_thenCachedInCouriersAvailable() {
         PageRequest pageable = PageRequest.of(0, 20);
 
-        Page<CourierResponse> firstCall = courierService.findAll(CourierStatus.AVAILABLE, pageable);
+        Page<CourierResponse> firstCall = courierService.findAll(CourierStatus.ACTIVO, pageable);
         assertThat(firstCall).isNotEmpty();
 
         Cache cache = cacheManager.getCache(RedisCacheConfig.COURIERS_AVAILABLE_CACHE);
         assertThat(cache).isNotNull();
 
         // Segunda llamada: recupera de caché
-        Page<CourierResponse> secondCall = courierService.findAll(CourierStatus.AVAILABLE, pageable);
+        Page<CourierResponse> secondCall = courierService.findAll(CourierStatus.ACTIVO, pageable);
         assertThat(secondCall.getContent()).isEqualTo(firstCall.getContent());
     }
 
@@ -90,19 +91,19 @@ class CourierCacheIntegrationTest extends JwtTestSupport {
     void whenFindAllWithNonAvailableStatus_thenNotCached() {
         PageRequest pageable = PageRequest.of(0, 20);
 
-        courierService.findAll(CourierStatus.BUSY, pageable);
+        courierService.findAll(CourierStatus.INACTIVO, pageable);
 
         Cache cache = cacheManager.getCache(RedisCacheConfig.COURIERS_AVAILABLE_CACHE);
         assertThat(cache).isNotNull();
-        // Clave de status BUSY no debe existir en couriers_available
-        String busyKey = "status:BUSY:page:0:size:20:sort:UNSORTED";
+        // Clave de status INACTIVO no debe existir en couriers_available
+        String busyKey = "status:INACTIVO:page:0:size:20:sort:UNSORTED";
         assertThat(cache.get(busyKey)).isNull();
     }
 
     @Test
     void whenCreateCourier_thenCacheIsEvicted() {
         PageRequest pageable = PageRequest.of(0, 20);
-        courierService.findAll(CourierStatus.AVAILABLE, pageable);
+        courierService.findAll(CourierStatus.ACTIVO, pageable);
 
         Cache cache = cacheManager.getCache(RedisCacheConfig.COURIERS_AVAILABLE_CACHE);
         assertThat(cache).isNotNull();
@@ -110,43 +111,43 @@ class CourierCacheIntegrationTest extends JwtTestSupport {
         // Al dar de alta un repartidor se desaloja la caché
         courierService.create(new CourierRequest("Nuevo Repartidor", "39999002", "AUTO"));
 
-        String cacheKey = "status:AVAILABLE:page:0:size:20:sort:UNSORTED";
+        String cacheKey = "status:ACTIVO:page:0:size:20:sort:UNSORTED";
         assertThat(cache.get(cacheKey)).isNull();
     }
 
     @Test
     void whenChangeStatus_thenCacheIsEvicted() {
         PageRequest pageable = PageRequest.of(0, 20);
-        courierService.findAll(CourierStatus.AVAILABLE, pageable);
+        courierService.findAll(CourierStatus.ACTIVO, pageable);
 
         Cache cache = cacheManager.getCache(RedisCacheConfig.COURIERS_AVAILABLE_CACHE);
         assertThat(cache).isNotNull();
 
         // Cambio manual de estado desaloja la caché
-        courierService.changeStatus(courier.getId(), CourierStatus.BUSY);
+        courierService.changeStatus(courier.getId(), CourierStatus.INACTIVO);
 
-        String cacheKey = "status:AVAILABLE:page:0:size:20:sort:UNSORTED";
+        String cacheKey = "status:ACTIVO:page:0:size:20:sort:UNSORTED";
         assertThat(cache.get(cacheKey)).isNull();
     }
 
     @Test
     void whenUpdateCourier_thenCacheIsEvicted() {
         PageRequest pageable = PageRequest.of(0, 20);
-        courierService.findAll(CourierStatus.AVAILABLE, pageable);
+        courierService.findAll(CourierStatus.ACTIVO, pageable);
 
         Cache cache = cacheManager.getCache(RedisCacheConfig.COURIERS_AVAILABLE_CACHE);
         assertThat(cache).isNotNull();
 
         courierService.update(courier.getId(), new CourierRequest("Nombre Actualizado", "39999001", "UTILITARIO"));
 
-        String cacheKey = "status:AVAILABLE:page:0:size:20:sort:UNSORTED";
+        String cacheKey = "status:ACTIVO:page:0:size:20:sort:UNSORTED";
         assertThat(cache.get(cacheKey)).isNull();
     }
 
     @Test
     void whenRabbitMqEnRutaEventReceived_thenCacheIsEvicted() {
         PageRequest pageable = PageRequest.of(0, 20);
-        courierService.findAll(CourierStatus.AVAILABLE, pageable);
+        courierService.findAll(CourierStatus.ACTIVO, pageable);
 
         Cache cache = cacheManager.getCache(RedisCacheConfig.COURIERS_AVAILABLE_CACHE);
         assertThat(cache).isNotNull();
@@ -154,28 +155,29 @@ class CourierCacheIntegrationTest extends JwtTestSupport {
         ShipmentStatusChangedEvent event = new ShipmentStatusChangedEvent(
                 UUID.randomUUID(),
                 UUID.randomUUID().toString(),
-                "TRK-TEST-CACHE-1",
+                "LT-CACHE1",
                 courier.getId().toString(),
-                "PENDIENTE",
-                "EN_RUTA",
+                ShipmentStatus.PENDIENTE,
+                ShipmentStatus.EN_RUTA,
                 Instant.now()
         );
 
-        shipmentStatusListener.handleShipmentStatusChanged(event);
+        shipmentStatusListener.consume(event);
 
-        String cacheKey = "status:AVAILABLE:page:0:size:20:sort:UNSORTED";
+        String cacheKey = "status:ACTIVO:page:0:size:20:sort:UNSORTED";
         assertThat(cache.get(cacheKey)).isNull();
 
-        // Verificar que el repartidor quedó en BUSY
+        // La ocupación no cambia la habilitación administrativa.
         assertThat(courierRepository.findById(courier.getId()).orElseThrow().getStatus())
-                .isEqualTo(CourierStatus.BUSY);
+                .isEqualTo(CourierStatus.ACTIVO);
+        assertThat(courierRepository.findById(courier.getId()).orElseThrow().isAvailable()).isFalse();
     }
 
     @Test
     void whenRabbitMqEntregadoEventReceived_thenCacheIsEvicted() {
-        courierService.changeStatus(courier.getId(), CourierStatus.BUSY);
+        courierService.changeStatus(courier.getId(), CourierStatus.INACTIVO);
         PageRequest pageable = PageRequest.of(0, 20);
-        courierService.findAll(CourierStatus.AVAILABLE, pageable);
+        courierService.findAll(CourierStatus.ACTIVO, pageable);
 
         Cache cache = cacheManager.getCache(RedisCacheConfig.COURIERS_AVAILABLE_CACHE);
         assertThat(cache).isNotNull();
@@ -183,20 +185,20 @@ class CourierCacheIntegrationTest extends JwtTestSupport {
         ShipmentStatusChangedEvent event = new ShipmentStatusChangedEvent(
                 UUID.randomUUID(),
                 UUID.randomUUID().toString(),
-                "TRK-TEST-CACHE-2",
+                "LT-CACHE2",
                 courier.getId().toString(),
-                "EN_RUTA",
-                "ENTREGADO",
+                ShipmentStatus.EN_RUTA,
+                ShipmentStatus.ENTREGADO,
                 Instant.now()
         );
 
-        shipmentStatusListener.handleShipmentStatusChanged(event);
+        shipmentStatusListener.consume(event);
 
-        String cacheKey = "status:AVAILABLE:page:0:size:20:sort:UNSORTED";
+        String cacheKey = "status:ACTIVO:page:0:size:20:sort:UNSORTED";
         assertThat(cache.get(cacheKey)).isNull();
 
         assertThat(courierRepository.findById(courier.getId()).orElseThrow().getStatus())
-                .isEqualTo(CourierStatus.AVAILABLE);
+                .isEqualTo(CourierStatus.INACTIVO);
     }
 
     @Test
@@ -205,11 +207,11 @@ class CourierCacheIntegrationTest extends JwtTestSupport {
         assertThat(redisCacheConfig.isCacheReliable()).isFalse();
 
         PageRequest pageable = PageRequest.of(0, 20);
-        courierService.findAll(CourierStatus.AVAILABLE, pageable);
+        courierService.findAll(CourierStatus.ACTIVO, pageable);
 
         Cache cache = cacheManager.getCache(RedisCacheConfig.COURIERS_AVAILABLE_CACHE);
         assertThat(cache).isNotNull();
-        String cacheKey = "status:AVAILABLE:page:0:size:20:sort:UNSORTED";
+        String cacheKey = "status:ACTIVO:page:0:size:20:sort:UNSORTED";
         assertThat(cache.get(cacheKey)).isNull();
     }
 }

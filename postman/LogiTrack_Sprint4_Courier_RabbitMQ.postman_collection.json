@@ -1,8 +1,8 @@
 {
 	"info": {
 		"_postman_id": "c4d18070-1070-4f9e-a890-courier-sprint4",
-		"name": "LogiTrack - Sprint 4 - Courier RabbitMQ (Issue #107)",
-		"description": "Colección de Postman para verificar el consumo asíncrono de eventos RabbitMQ en courier-service y la actualización automática de disponibilidad de repartidores (Issue #107).\n\nFlujo de verificación:\n1. Autenticación con admin en Gateway (8080) o Security Service (8083).\n2. Consultar repartidor inicial (AVAILABLE / ACTIVO).\n3. Publicar evento EN_RUTA en shipment.topic.exchange -> Courier pasa a BUSY.\n4. Publicar evento ENTREGADO -> Courier pasa a AVAILABLE.",
+		"name": "LogiTrack Courier - Courier RabbitMQ (Issue #107)",
+		"description": "Colección de Postman para verificar el consumo asíncrono de eventos RabbitMQ en courier-service y la actualización automática de disponibilidad de repartidores (Issue #107).\n\nFlujo de verificación:\n1. Autenticación con admin en Gateway (8080) o Security Service (8083).\n2. Consultar repartidor inicial (ACTIVO).\n3. Publicar evento EN_RUTA en shipment.topic.exchange -> Courier queda ocupado sin cambiar ACTIVO.\n4. Publicar evento ENTREGADO -> Courier vuelve a estar disponible.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -115,7 +115,7 @@
 									"",
 									"var data = pm.response.json();",
 									"if (data.content && data.content.length > 0) {",
-									"    var activeCourier = data.content.find(function(c) { return c.status === 'AVAILABLE' || c.status === 'ACTIVO'; });",
+									"    var activeCourier = data.content.find(function(c) { return c.status === 'ACTIVO' && c.available !== false; });",
 									"    var selectedId = activeCourier ? activeCourier.id : data.content[0].id;",
 									"    pm.collectionVariables.set(\"courierId\", selectedId);",
 									"    pm.environment.set(\"courierId\", selectedId);",
@@ -241,8 +241,8 @@
 									"});",
 									"",
 									"var data = pm.response.json();",
-									"pm.test(\"Repartidor paso a estado BUSY\", function () {",
-									"    pm.expect(data.status).to.eql(\"BUSY\");",
+									"pm.test(\"Repartidor conserva estado ACTIVO\", function () {",
+									"    pm.expect(data.status).to.eql(\"ACTIVO\");",
 									"});",
 									"pm.test(\"Repartidor ya NO esta disponible\", function () {",
 									"    pm.expect(data.available).to.be.false;",
@@ -332,8 +332,8 @@
 									"});",
 									"",
 									"var data = pm.response.json();",
-									"pm.test(\"Repartidor paso a estado AVAILABLE\", function () {",
-									"    pm.expect(data.status).to.eql(\"AVAILABLE\");",
+									"pm.test(\"Repartidor conserva estado ACTIVO\", function () {",
+									"    pm.expect(data.status).to.eql(\"ACTIVO\");",
 									"});",
 									"pm.test(\"Repartidor volvio a estar disponible\", function () {",
 									"    pm.expect(data.available).to.be.true;",

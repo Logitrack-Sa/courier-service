@@ -82,7 +82,7 @@ public class CourierServiceImp implements CourierService {
     @Cacheable(
             value = RedisCacheConfig.COURIERS_AVAILABLE_CACHE,
             key = "'status:' + #status + ':page:' + #pageable.pageNumber + ':size:' + #pageable.pageSize + ':sort:' + #pageable.sort",
-            condition = "#status != null && (#status.name() == 'AVAILABLE' || #status.name() == 'ACTIVO') && @redisCacheConfig.isCacheReliable()"
+            condition = "#status != null && #status.name() == 'ACTIVO' && @redisCacheConfig.isCacheReliable()"
     )
     public Page<CourierResponse> findAll(CourierStatus status, Pageable pageable) {
         log.debug("Listando repartidores status={} page={} size={}",

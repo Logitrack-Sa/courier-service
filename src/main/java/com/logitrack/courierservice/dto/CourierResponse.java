@@ -10,6 +10,11 @@ public record CourierResponse(
         String dni,
         String vehicleType,
         CourierStatus status,
-        Instant createdAt
+        Instant createdAt,
+        boolean available
 ) {
+    public CourierResponse(UUID id, String name, String dni, String vehicleType,
+            CourierStatus status, Instant createdAt) {
+        this(id, name, dni, vehicleType, status, createdAt, status == CourierStatus.ACTIVO);
+    }
 }
