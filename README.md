@@ -1,19 +1,22 @@
 # courier-service
 
-Repositorio inicial del Sprint 2 de LogiTrack. **Todavía no implementa el servicio ni contiene configuración productiva.**
+Extracción del CRUD de repartidores del Sprint 1 sobre la rama de Damián, issue #2. Java 25 y Spring Boot 3.5.16, Maven Wrapper, JPA y Flyway. Base exclusiva: courier_db. Conserva entidades, DTOs, mapper, servicio, controller y errores del trabajo previo.
 
-[Tablero del Sprint 2](https://github.com/orgs/Logitrack-Sa/projects/2) · [Contratos y puertos](https://github.com/Logitrack-Sa/shipment-service/blob/main/docs/sprint2/CONTRATOS.md) · [Workflow](https://github.com/Logitrack-Sa/shipment-service/blob/main/docs/sprint2/WORKFLOW.md)
+## Arrancar y probar
 
-Las issues del repositorio definen responsable, puntos, criterios y pruebas independientes. Usar fixtures y dobles para avanzar sin esperar servicios de otros integrantes. Se conserva el Sprint 1 en shipment-service.
+Definir DB_URL, DB_USERNAME y DB_PASSWORD de una base MySQL propia. `./mvnw spring-boot:run`; SERVER_PORT opcional (8082). Flyway crea el esquema y Hibernate lo valida. Sin usuarios/passwords por defecto. Auditoría técnica system mientras no exista la integración de identidad.
 
-Base actual: README, plantilla de PR, formulario de issues y revisor IA en GitHub Actions. No se agregan clases Java, POM, migraciones, Dockerfiles ni propiedades de aplicación hasta iniciar las issues.
+`./mvnw clean verify` usa H2 aislado. CI repite con MySQL 8.4, Flyway, persistencia y API reales. Para tests MySQL propios: TEST_DB_URL, TEST_DB_USERNAME y TEST_DB_PASSWORD, siempre sobre una base descartable.
 
-La IA devuelve hallazgos sobre PR y sugerencias de pruebas; no planifica, no aprueba ni integra. CI de esta base verifica automatización. Las pruebas Maven y Docker se agregan en sus issues cuando exista la aplicación.
+## Contrato conservado
 
-No incorporar credenciales, claves JWT privadas ni archivos .env. Java25 para aplicaciones; config-repo es únicamente Git de propiedades no sensibles dev/prod.
+- POST /api/v1/couriers: name y vehicleType; 201 y Location. Estado inicial ACTIVO, UUID generado.
+- GET /api/v1/couriers: página con content/page, filtro status opcional.
+- GET /api/v1/couriers/{id}: DTO id, name, vehicleType, status, createdAt.
+- PATCH /api/v1/couriers/{id}/status: ACTIVO o INACTIVO; implementación existente conservada.
 
-## Punto de partida de la extracción
+400 para campos o UUID inválidos, 404 si no existe. Los requests no aceptan id ni auditoría. [Traslado de UUID y datos](docs/MIGRACION.md).
 
-Reutilizar el CRUD de repartidores existente en shipment-service: entidad Courier, repositorio, mapper, DTOs, servicio, controller y manejo de errores. Conservar los UUID al migrar los datos; los envíos los guardarán como referencias escalares.
+Seguridad JWT, endpoints de disponibilidad/estado interno, Config Client y Docker pertenecen a otras issues. Esta base CRUD **no tiene autorización**: escucha solo en 127.0.0.1 por defecto. No exponerla en una red compartida antes de integrar seguridad; SERVER_ADDRESS permite preparar el despliegue posterior. No agregar entidades ni dependencias de shipment.
 
-Los endpoints de disponibilidad y estado interno mínimo están definidos en el contrato central. La base MySQL pertenece exclusivamente a este servicio. Probar HTTP y JWT con fixtures antes de integrar las aplicaciones reales; la seguridad y el CRUD tienen responsables separados en las issues.
+[Contrato del equipo](https://github.com/Logitrack-Sa/shipment-service/blob/main/docs/sprint2/CONTRATOS.md) · [Tablero](https://github.com/orgs/Logitrack-Sa/projects/2). La revisión IA no sustituye tests ni revisión humana.
